@@ -19,3 +19,6 @@ export interface AnswerResponse {
     explanation: string;
     isCorrect: boolean;
 }
+
+// [memo] TypeScript の Interface は Java における POJO の様にも使用できる。
+// [memo] フロントエンド側だとほとんどこの使い方になる？

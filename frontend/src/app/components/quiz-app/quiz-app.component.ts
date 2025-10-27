@@ -6,28 +6,31 @@ import { QuizService } from '../../services/quiz.service';
 import { AnswerResponse } from '../../models/quiz.model';
 
 @Component({
-    selector: 'app-quiz', // セレクタを 'app-root' から変更（app.component.html などで使うことを想定）
+    selector: 'app-quiz',
     standalone: true,
     imports: [CommonModule, FormsModule],
-    templateUrl: './quiz-app.component.html', // HTMLを別ファイルに分離
+    templateUrl: './quiz-app.component.html', // HTMLを別ファイルに分離 [memo] Component は TS, HTML, CSS に分けるとよい。
     styleUrl: './quiz-app.component.css',     // CSSを別ファイルに分離
-    changeDetection: ChangeDetectionStrategy.OnPush // OnPushでパフォーマンス向上
+    changeDetection: ChangeDetectionStrategy.OnPush // OnPushでパフォーマンス向上 [memo] デフォルトの変更検知対象コンポーネントを限定
 })
 export class QuizAppComponent {
     private quizService = inject(QuizService);
 
     // --- State Signals ---
-    genres = signal<string[]>(['歴史', '科学', 'エンタメ', '地理', 'おまかせ']).asReadonly();
-    selectedGenre = signal<string>(this.genres()[0]);
-    question = signal<string>('');
-    hint = signal<string>('');
-    userAnswer = signal<string>('');
-    answerResult = signal<AnswerResponse | null>(null); // 回答結果全体を保持
-    isLoading = signal<boolean>(false);
-    error = signal<string | null>(null);
+    // [memo] Component のプロパティは signal で統一する。
+    // [memo] HTML で通常のプロパティと signal のどちらかを使い分ける必要がなくなり、書き方の統一や混乱の防止ができる。
+    genres = signal<string[]>(['歴史', '科学', 'エンタメ', '地理', 'おまかせ']).asReadonly(); // ジャンルの配列。signal なので気軽に変更可。
+    selectedGenre = signal<string>(this.genres()[0]); // 選択したジャンル。初期値は genres の最初の値。
+    question = signal<string>(''); // 質問文。
+    hint = signal<string>(''); // ヒント文。
+    userAnswer = signal<string>(''); // ユーザーの回答。
+    answerResult = signal<AnswerResponse | null>(null); // 回答結果全体を保持。
+    isLoading = signal<boolean>(false); // ロード中かどうか。
+    error = signal<string | null>(null); // エラーメッセージ。
 
     // --- Computed Signals (Derived State) ---
-    // 回答結果から個別の情報を取得するためのComputed Signal
+    // 回答結果から個別の情報を取得するためのComputed Signal.
+    // [memo] Computed Signal（産出シグナル）は、他のシグナルの値を基に算出された readonly な Signal.
     resultText = computed(() => this.answerResult()?.result || '');
     explanationText = computed(() => this.answerResult()?.explanation || '');
     isCorrect = computed(() => this.answerResult()?.isCorrect || false);

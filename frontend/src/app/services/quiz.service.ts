@@ -4,12 +4,17 @@ import { Observable, throwError, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { AnswerRequest, AnswerResponse, HintRequest, QuizRequest } from '../models/quiz.model';
 
+// [memo] @Injectable デコレータは @Service アノテーションみたいな意味。
+// [memo] これを付けると Angular の DI コンテナにクラスが登録される。
 @Injectable({
   providedIn: 'root' // アプリケーション全体でシングルトンとして提供
 })
 export class QuizService {
+  // [memo] HTTP クライアントを DI. Spring Boot におけるフィールドインジェクション。
+  // [memo] 独り言：Angular（TypeScript）もコンストラクタインジェクションできるらしいが...
+  // [memo] 余裕があれば上記ベストプラクティスの方法に変える。
   private http = inject(HttpClient);
-  private readonly API_URL = 'http://localhost:8080/api/quiz'; // 環境変数などから取得するのが望ましい
+  private readonly API_URL = 'http://localhost:8080/api/quiz'; // [TODO] 後で環境変数化したい。
 
   /**
    * クイズの問題を取得します。
@@ -17,8 +22,11 @@ export class QuizService {
    * @returns 問題文のObservable
    */
   getQuestion(payload: QuizRequest): Observable<string> {
+    // [memo] Observable は Angular が HTTP リクエストを送る前の疎通確認用のオブジェクト？
+    // [TODO] Observable についてちゃんと調べる。
     return this.http.post(`${this.API_URL}/question`, payload, { responseType: 'text' })
       .pipe(
+        // [memo] HTTP クライアントの .pipe を使用することで、諸々の処理をパイプライン内で連続的に実行してくれる。
         catchError(this.handleError<string>('クイズの取得に失敗しました。', ''))
       );
   }
@@ -50,7 +58,7 @@ export class QuizService {
   }
 
   /**
-   * テキスト形式の回答レスポンスをAnswerResponseオブジェクトにパースします。
+   * テキスト形式の回答レスポンスを AnswerResponse オブジェクトにパースします。
    * @param response バックエンドからのテキストレスポンス
    * @returns パースされたAnswerResponse
    */
@@ -63,7 +71,7 @@ export class QuizService {
   }
 
   /**
-   * HTTPエラーハンドリング
+   * HTTP エラーハンドリング
    * @param operation 実行した操作名
    * @param result エラー時に返すデフォルト値
    * @returns エラーハンドリングを含むObservable
@@ -75,6 +83,7 @@ export class QuizService {
       // ここでは簡易的にコンソールに出力し、デフォルト値を返す
       // `throwError` を使ってエラーを上位に伝播させることもできます
       // return throwError(() => new Error(message));
+      // [TODO] エラーハンドリングについて AI で作成。後で詳細設定・確認を行う。
       return of(result as T); // エラーが発生してもアプリを継続させるためにデフォルト値を返す
     };
   }

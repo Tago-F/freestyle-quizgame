@@ -3,42 +3,38 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 import { QuizService } from '../../services/quiz.service';
-import { AnswerResponse } from '../../models/quiz.model';
+import { AnswerResponse } from '../../models/quiz.model'; // QuizResponse, HintResponse は不要
 
 @Component({
     selector: 'app-quiz',
     standalone: true,
     imports: [CommonModule, FormsModule],
-    templateUrl: './quiz-app.component.html', // HTMLを別ファイルに分離 [memo] Component は TS, HTML, CSS に分けるとよい。
-    styleUrl: './quiz-app.component.css',     // CSSを別ファイルに分離
-    changeDetection: ChangeDetectionStrategy.OnPush // OnPushでパフォーマンス向上 [memo] デフォルトの変更検知対象コンポーネントを限定
+    templateUrl: './quiz-app.component.html',
+    styleUrl: './quiz-app.component.css',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class QuizAppComponent {
     private quizService = inject(QuizService);
 
     // --- State Signals ---
-    // [memo] Component のプロパティは signal で統一する。
-    // [memo] HTML で通常のプロパティと signal のどちらかを使い分ける必要がなくなり、書き方の統一や混乱の防止ができる。
-    genres = signal<string[]>(['歴史', '科学', 'エンタメ', '地理', 'おまかせ']).asReadonly(); // ジャンルの配列。signal なので気軽に変更可。
-    selectedGenre = signal<string>(this.genres()[0]); // 選択したジャンル。初期値は genres の最初の値。
-    question = signal<string>(''); // 質問文。
-    hint = signal<string>(''); // ヒント文。
-    userAnswer = signal<string>(''); // ユーザーの回答。
-    answerResult = signal<AnswerResponse | null>(null); // 回答結果全体を保持。
-    isLoading = signal<boolean>(false); // ロード中かどうか。
-    error = signal<string | null>(null); // エラーメッセージ。
+    genres = signal<string[]>(['歴史', '科学', 'エンタメ', '地理', 'おまかせ']).asReadonly();
+    selectedGenre = signal<string>(this.genres()[0]);
+    question = signal<string>(''); // 問題文 (string)
+    hint = signal<string>(''); // ヒント文 (string)
+    userAnswer = signal<string>('');
+    answerResult = signal<AnswerResponse | null>(null); // 回答結果 (AnswerResponse)
+    isLoading = signal<boolean>(false);
+    error = signal<string | null>(null);
 
     // --- Computed Signals (Derived State) ---
-    // 回答結果から個別の情報を取得するためのComputed Signal.
-    // [memo] Computed Signal（産出シグナル）は、他のシグナルの値を基に算出された readonly な Signal.
-    resultText = computed(() => this.answerResult()?.result || '');
+    // resultText は不要になったため削除 (isCorrect を直接利用)
     explanationText = computed(() => this.answerResult()?.explanation || '');
-    isCorrect = computed(() => this.answerResult()?.isCorrect || false);
+    isCorrect = computed(() => this.answerResult()?.isCorrect || false); // AnswerResponse の isCorrect を直接参照
 
-    // ボタンの無効状態などを管理するComputed Signal
+    // ボタンの状態管理
     canSubmit = computed(() => !!this.userAnswer() && !this.isLoading() && !this.answerResult());
     canGetHint = computed(() => !!this.question() && !this.isLoading() && !this.hint() && !this.answerResult());
-    canGetNextQuiz = computed(() => !this.isLoading() || !!this.answerResult()); // ローディング中でも結果があれば次へ
+    canGetNextQuiz = computed(() => !this.isLoading() || !!this.answerResult());
     nextQuizButtonText = computed(() => this.answerResult() || this.question() ? '次のクイズ' : 'クイズ');
 
     // --- Methods ---
@@ -46,7 +42,7 @@ export class QuizAppComponent {
     /** ジャンルを選択 */
     selectGenre(genre: string): void {
         this.selectedGenre.set(genre);
-        this.resetStateForNewQuestion(); // ジャンル変更時にも状態をリセット
+        this.resetStateForNewQuestion();
     }
 
     /** クイズを取得 */
@@ -58,14 +54,14 @@ export class QuizAppComponent {
         this.quizService.getQuestion({ genre: this.selectedGenre() })
             .pipe(finalize(() => this.isLoading.set(false)))
             .subscribe({
-                next: (q) => {
-                    if (q) { // サービスでエラー時に空文字が返る可能性があるためチェック
+                next: (q) => { // レスポンスは string 型 (問題文)
+                    if (q) {
                         this.question.set(q);
-                    } else if (!this.error()) { // サービス側でエラーがハンドルされなかった場合
+                    } else if (!this.error()) {
                         this.error.set('クイズの取得に失敗しました。');
                     }
                 },
-                error: (err) => { // サービス側で throwError した場合など
+                error: (err) => {
                     console.error("GetQuiz Error:", err);
                     this.error.set('クイズの取得中に予期せぬエラーが発生しました。');
                 }
@@ -83,7 +79,7 @@ export class QuizAppComponent {
         this.quizService.getHint({ question: currentQuestion })
             .pipe(finalize(() => this.isLoading.set(false)))
             .subscribe({
-                next: (h) => {
+                next: (h) => { // レスポンスは string 型 (ヒント文)
                     if (h) {
                         this.hint.set(h);
                     } else if (!this.error()) {
@@ -109,11 +105,13 @@ export class QuizAppComponent {
         this.quizService.submitAnswer({ question: currentQuestion, answer: currentAnswer })
             .pipe(finalize(() => this.isLoading.set(false)))
             .subscribe({
-                next: (res) => {
-                    if (res && res.result !== '判定不能') { // サービスのエラー時のデフォルト値でないかチェック
+                next: (res) => { // レスポンスは AnswerResponse 型
+                    if (res) { // res が null や undefined でないことを確認
                         this.answerResult.set(res);
+                        // resultText を設定する処理は不要
                     } else if (!this.error()) {
-                        this.error.set('回答の判定に失敗しました。');
+                        // サービスがデフォルト値を返さなかった場合のフォールバック
+                        this.error.set('回答の判定結果を正しく受け取れませんでした。');
                     }
                 },
                 error: (err) => {
@@ -130,6 +128,6 @@ export class QuizAppComponent {
         this.userAnswer.set('');
         this.answerResult.set(null);
         this.error.set(null);
-        this.isLoading.set(false); // 開始前にローディング解除
+        this.isLoading.set(false);
     }
 }

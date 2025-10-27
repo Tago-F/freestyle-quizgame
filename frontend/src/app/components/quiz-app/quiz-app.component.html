@@ -34,12 +34,14 @@
             <div class="loader"></div>
             }
             @if (!isLoading() && question()) {
+            <!-- 問題文の表示 (変更なし) -->
             <p class="text-2xl font-semibold text-slate-700 whitespace-pre-wrap">{{ question() }}</p>
             }
         </div>
 
         <!-- Hint Display -->
         @if (hint()) {
+        <!-- ヒントの表示 (変更なし) -->
         <div
             class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center text-blue-700 mb-6 transition-opacity duration-500">
             <strong>ヒント:</strong> {{ hint() }}
@@ -47,17 +49,27 @@
         }
 
         <!-- Result and Explanation Display -->
+        <!-- answerResult() が null でない場合に表示 -->
         @if (answerResult(); as resultData) {
-        <div class="mb-6 p-5 rounded-lg transition-all duration-500" [class.bg-green-50]="resultData.isCorrect"
-            [class.border-green-200]="resultData.isCorrect" [class.bg-red-50]="!resultData.isCorrect"
-            [class.border-red-200]="!resultData.isCorrect">
-            <h3 class="text-xl font-bold" [class.text-green-700]="resultData.isCorrect"
+        <div class="mb-6 p-5 rounded-lg transition-all duration-500"
+             [class.bg-green-50]="resultData.isCorrect"
+             [class.border-green-200]="resultData.isCorrect"
+             [class.bg-red-50]="!resultData.isCorrect"
+             [class.border-red-200]="!resultData.isCorrect">
+            <!-- 正解・不正解の表示 (isCorrect を直接使用) -->
+            <h3 class="text-xl font-bold"
+                [class.text-green-700]="resultData.isCorrect"
                 [class.text-red-700]="!resultData.isCorrect">
-                {{ resultData.result }}
+                {{ resultData.isCorrect ? '正解！' : '不正解...' }} <!-- isCorrect で表示を切り替え -->
             </h3>
+            <!-- 解説文の表示 (explanation を使用、変更なし) -->
             <p class="mt-2 text-slate-600 whitespace-pre-wrap">{{ resultData.explanation }}</p>
         </div>
+        } @else {
+        <!-- 結果が表示されていない時のプレースホルダー (任意) -->
+        <!-- <div class="mb-6 p-5 rounded-lg bg-gray-50 border border-gray-200 min-h-[100px]"></div> -->
         }
+
 
         <!-- User Input -->
         <div class="flex flex-col sm:flex-row gap-4 mb-6">

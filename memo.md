@@ -19,6 +19,15 @@
 
     - https://docs.spring.io/spring-ai/docs/current/api/org/springframework/ai/chat/client/ChatClient.html
 
+## 知らなかったことなど殴り書き
+
+- BeanOutputConverter
+
+    - Spring AI に型定義を宣言し、レスポンスを型定義に合わせた JSON で出力してくれる便利クラス。
+
+    - chatClient.prompt(prompt).call().entity(outputConverter) のような使用イメージ。
+
+
 ## 参考資料
 
 - Java, TypeScript の intarface の違い

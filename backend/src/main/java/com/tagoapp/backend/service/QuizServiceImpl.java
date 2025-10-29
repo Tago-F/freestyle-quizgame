@@ -38,28 +38,39 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public QuizResponse getQuizQuestion(QuizRequest request) {
+        // 選択したジャンルの情報を [INFO] に追加
         logger.info("Generating quiz question for genre: {}", request.genre());
         try {
+            // プロンプト用の文字列
+            // ステークホルダー {genre} は PromptTemplate.create() メソッドで Map を渡すことで組み立て。
             String questionPrompt = """
                     あなたはクイズマスターです。
                     {genre} に関するクイズ問題を1問、回答を含めずに生成してください。
+                    問題文は50文字以内にしてください。
                     問題文のみを返してください。
                     """;
+            // 文字列を元にプロンプトテンプレートを作成
             PromptTemplate promptTemplate = new PromptTemplate(questionPrompt);
+            // ステークホルダーにジャンルの文字列を追加しプロンプトを作成
             Prompt prompt = promptTemplate.create(Map.of("genre", request.genre()));
 
-            logger.debug("Calling Gemini API for question generation...");
+            // ChatClient を使用して Gemini API にプロンプトをコール
+            // content() メソッドをは応答を単純な String として受け取る
             String question = chatClient.prompt(prompt)
                     .call()
                     .content();
-            logger.info("Successfully generated question.");
-            logger.debug("Generated question: {}", question);
 
+            // 成功時ログ
+            logger.info("Successfully generated question.");
+            logger.info("Generated question: {}", question);
+
+            // AI からのレスポンスが空の場合
             if (question == null || question.isBlank()) {
+                // [ERROR] ログを残して例外を throw
                 logger.error("Generated question is null or blank.");
                 throw new RuntimeException("生成された問題文が空です。");
             }
-
+            // 問題文を String 型で返す
             return new QuizResponse(question);
         } catch (Exception e) {
             logger.error("Error generating quiz question: {}", e.getMessage(), e);
@@ -69,8 +80,10 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public HintResponse getQuizHint(HintRequest request) {
+        // 問題文の情報を [INFO] に追加
         logger.info("Generating hint for question: {}", request.question());
         try {
+            // ヒント用プロンプト
             String hintPrompt = """
                     あなたはヒント提供者です。
                     以下のクイズ問題に対するヒントを1文で生成してください。
@@ -80,20 +93,26 @@ public class QuizServiceImpl implements QuizService {
                     問題文:
                     {question}
                     """;
+            // プロンプトテンプレ作成
             PromptTemplate promptTemplate = new PromptTemplate(hintPrompt);
+            // 問題文を元にプロンプト組み立て
             Prompt prompt = promptTemplate.create(Map.of("question", request.question()));
 
-            logger.debug("Calling Gemini API for hint generation...");
+            // プロンプトを Gemini API に投げる
             String hint = chatClient.prompt(prompt)
                     .call()
                     .content();
-            logger.info("Successfully generated hint.");
-            logger.debug("Generated hint: {}", hint);
 
+            // ログ出力
+            logger.info("Successfully generated hint.");
+            logger.info("Generated hint: {}", hint);
+
+            // 空チェック
             if (hint == null || hint.isBlank()) {
                 logger.error("Generated hint is null or blank.");
                 throw new RuntimeException("生成されたヒントが空です。");
             }
+            // ヒントを String 型で返す
             return new HintResponse(hint);
         } catch (Exception e) {
             logger.error("Error generating hint: {}", e.getMessage(), e);
@@ -103,10 +122,16 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public AnswerResponse checkQuizAnswer(AnswerRequest request) {
+        // 問題文をログ出力
         logger.info("Checking answer for question: {}", request.question());
+        // 回答文をログ出力
+        logger.info("Checking user answer: {}", request.answer());
         try {
+            // BeanOutputConverter を使用して AI からの最終的な出力の型を Spring AI に宣言
+            // 最終的に AnswerResponse（isCorrect と explanation）にしてもらう。
             var outputConverter = new BeanOutputConverter<>(AnswerResponse.class);
 
+            // プロンプトの文字列
             String answerPrompt = """
                     あなたは採点者であり解説者です。
                     以下のクイズ問題とユーザーの回答を比較し、正誤判定 (isCorrect: boolean) と、正解・不正解に関わらずその問題に関する簡潔な解説 (explanation: String) をJSON形式で出力してください。
@@ -122,26 +147,32 @@ public class QuizServiceImpl implements QuizService {
                     {format}
                     """;
 
+            // プロンプトテンプレ作成
             PromptTemplate promptTemplate = new PromptTemplate(answerPrompt);
+            // プロンプト作成
             Prompt prompt = promptTemplate.create(Map.of(
                     "question", request.question(),
                     "answer", request.answer(),
+                    // format は BeanOutputConverter で宣言した型のフィールド変数を JSON のキーとしたもの
                     "format", outputConverter.getFormat()));
 
-            logger.debug("Calling Gemini API for answer checking...");
-
+            // entity(outputConverter) で自動的に AnswerResponse に変換するように指示
             AnswerResponse answerResponse = chatClient.prompt(prompt)
                     .call()
                     .entity(outputConverter);
 
-            logger.debug("Parsed AnswerResponse: {}", answerResponse);
-
+            // ログ書き書き。
+            logger.info("Parsed AnswerResponse: {}", answerResponse);
             logger.info("Successfully checked answer. Correct: {}", answerResponse.isCorrect());
 
+            // 説明文が無い場合
             if (answerResponse.explanation() == null || answerResponse.explanation().isBlank()) {
+                // [WARN] 出力
                 logger.warn("Generated explanation is null or blank, providing default message.");
+                // 正誤判定のみでも返却できるようにする
                 return new AnswerResponse(answerResponse.isCorrect(), "(解説がありませんでした)");
             }
+            // AnswerResponse を返却
             return answerResponse;
 
         } catch (Exception e) {

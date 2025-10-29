@@ -91,12 +91,24 @@
 			<artifactId>spring-cloud-azure-starter-storage</artifactId>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.springframework.ai/spring-ai-vertex-ai-gemini -->
+		<!-- https://spring.pleiades.io/spring-ai/reference/api/chat/vertexai-gemini-chat.html -->
+		<!-- [memo] v1.0.0（GA）からアーティファクト ID の命名規則に変更有。ここに気づかず 2 日間苦戦した、要注意。 -->
+		<!-- [memo] Qiita や AI だけでなくリファレンスとリリースノートを見るの本当に大事。 -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-vertex-ai-gemini</artifactId>
-			<!-- <version>1.0.3</version> -->
+			<artifactId>spring-ai-starter-model-vertex-ai-gemini</artifactId>
 		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.springframework.ai/spring-ai-vertex-ai-gemini -->
+		<!-- [TODO] starter の中に含まれる可能性あり。頃合いを見て削除を試す。 -->
+		<!-- <dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-vertex-ai-gemini</artifactId>
+		</dependency> -->
+			<!-- <version>1.0.3</version> -->
+			<!-- [memo] BOM 管理がうまくいかないときは上記コメントアウトを外し dependency に入れる。 -->
+		
+		<!-- [memo] 20251029: starter のみの構成に変更。 -->
 
 		<dependency>
 			<groupId>org.postgresql</groupId>

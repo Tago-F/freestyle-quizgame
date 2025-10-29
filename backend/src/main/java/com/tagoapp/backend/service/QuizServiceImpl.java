@@ -3,7 +3,6 @@ package com.tagoapp.backend.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -21,22 +20,22 @@ import java.util.Map;
 @Service
 public class QuizServiceImpl implements QuizService {
 
+    /** slf4j ロガー */
     private static final Logger logger = LoggerFactory.getLogger(QuizServiceImpl.class);
 
+    /** Gemini とチャット（リクエスト・レスポンス）を行う為のクライアント */
     private final ChatClient chatClient;
 
-    // Constructor Injection
+    /**
+     * コンストラクタ。
+     * chatClientBuilder を使用し、chatClient のビルド（初期化）を行う。
+     * 
+     * @param chatClientBuilder
+     */
     public QuizServiceImpl(ChatClient.Builder chatClientBuilder) {
         this.chatClient = chatClientBuilder.build();
     }
 
-    /**
-     * 指定されたジャンルのクイズ問題を取得します。
-     *
-     * @param request ジャンル情報
-     * @return クイズ問題レスポンス
-     * @throws RuntimeException Gemini API呼び出し等でエラーが発生した場合
-     */
     @Override
     public QuizResponse getQuizQuestion(QuizRequest request) {
         logger.info("Generating quiz question for genre: {}", request.genre());
@@ -54,7 +53,7 @@ public class QuizServiceImpl implements QuizService {
                     .call()
                     .content();
             logger.info("Successfully generated question.");
-            logger.debug("Generated question: {}", question); // デバッグ用に問題文をログ出力
+            logger.debug("Generated question: {}", question);
 
             if (question == null || question.isBlank()) {
                 logger.error("Generated question is null or blank.");
@@ -64,18 +63,10 @@ public class QuizServiceImpl implements QuizService {
             return new QuizResponse(question);
         } catch (Exception e) {
             logger.error("Error generating quiz question: {}", e.getMessage(), e);
-            // Controller 層でハンドリングするために RuntimeException をスロー
             throw new RuntimeException("クイズ問題の生成中にエラーが発生しました。", e);
         }
     }
 
-    /**
-     * 指定されたクイズ問題に対するヒントを取得します。
-     *
-     * @param request クイズ問題文
-     * @return ヒントレスポンス
-     * @throws RuntimeException Gemini API呼び出し等でエラーが発生した場合
-     */
     @Override
     public HintResponse getQuizHint(HintRequest request) {
         logger.info("Generating hint for question: {}", request.question());
@@ -97,7 +88,7 @@ public class QuizServiceImpl implements QuizService {
                     .call()
                     .content();
             logger.info("Successfully generated hint.");
-            logger.debug("Generated hint: {}", hint); // デバッグ用にヒントをログ出力
+            logger.debug("Generated hint: {}", hint);
 
             if (hint == null || hint.isBlank()) {
                 logger.error("Generated hint is null or blank.");
@@ -110,14 +101,6 @@ public class QuizServiceImpl implements QuizService {
         }
     }
 
-    /**
-     * ユーザーの回答を判定し、解説を取得します。
-     * BeanOutputConverter を使用して JSON 形式のレスポンスを取得します。
-     *
-     * @param request クイズ問題文とユーザーの回答
-     * @return 回答結果レスポンス
-     * @throws RuntimeException Gemini API呼び出し等でエラーが発生した場合
-     */
     @Override
     public AnswerResponse checkQuizAnswer(AnswerRequest request) {
         logger.info("Checking answer for question: {}", request.question());
@@ -146,29 +129,24 @@ public class QuizServiceImpl implements QuizService {
                     "format", outputConverter.getFormat()));
 
             logger.debug("Calling Gemini API for answer checking...");
-            // .entity() を使用して BeanOutputConverter で直接 AnswerResponse に変換
-            ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
 
-            // レスポンスの内容をログに出力（デバッグ用）
-            String rawResponse = response.getResult().getOutput().getContent();
-            logger.debug("Raw response from Gemini API: {}", rawResponse);
+            AnswerResponse answerResponse = chatClient.prompt(prompt)
+                    .call()
+                    .entity(outputConverter);
 
-            AnswerResponse answerResponse = outputConverter.convert(rawResponse);
+            logger.debug("Parsed AnswerResponse: {}", answerResponse);
 
             logger.info("Successfully checked answer. Correct: {}", answerResponse.isCorrect());
-            logger.debug("Generated explanation: {}", answerResponse.explanation()); // デバッグ用に解説をログ出力
 
             if (answerResponse.explanation() == null || answerResponse.explanation().isBlank()) {
                 logger.warn("Generated explanation is null or blank, providing default message.");
-                // 解説が空の場合、デフォルトのメッセージを設定するなどのフォールバック処理
                 return new AnswerResponse(answerResponse.isCorrect(), "(解説がありませんでした)");
             }
-
             return answerResponse;
+
         } catch (Exception e) {
-            logger.error("Error checking quiz answer: {}", e.getMessage(), e);
-            // APIからのレスポンス形式が期待通りでない場合などのパースエラーもここでキャッチされる可能性
-            throw new RuntimeException("回答の判定中にエラーが発生しました。", e);
+            logger.error("Error checking quiz answer or parsing response: {}", e.getMessage(), e);
+            throw new RuntimeException("回答の判定またはレスポンスの解析中にエラーが発生しました。", e);
         }
     }
 }

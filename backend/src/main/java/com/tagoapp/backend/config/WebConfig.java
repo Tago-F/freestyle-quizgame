@@ -1,0 +1,21 @@
+package com.tagoapp.backend.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**") // /api/ で始まるすべてのパスに適用
+                .allowedOrigins(
+                        "http://localhost:4200",
+                        "http://127.0.0.1:4200" // [TODO] ここに本番環境の URL も追加
+                )
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // OPTIONSとDELETEを明示的に許可
+                .allowedHeaders("*") // すべてのヘッダーを許可
+                .allowCredentials(true); // クレデンシャル情報の送信を許可
+    }
+}

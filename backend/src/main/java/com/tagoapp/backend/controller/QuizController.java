@@ -15,7 +15,7 @@ import com.tagoapp.backend.service.QuizService;
 
 @RestController
 @RequestMapping("/api/quiz")
-@CrossOrigin(origins = "http://localhost:4200") // Angular開発サーバーからのアクセスを許可 [TODO] 本番環境は URL が決定次第追加
+@CrossOrigin(origins = "http://127.0.0.1:4200 , http://localhost:4200") // Angular開発サーバーからのアクセスを許可 [TODO] 本番環境は URL が決定次第追加
 public class QuizController {
 
     private static final Logger logger = LoggerFactory.getLogger(QuizController.class);

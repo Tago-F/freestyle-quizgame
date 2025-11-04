@@ -8,14 +8,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-// import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import com.tagoapp.backend.dto.*; // DTOパッケージをインポート
 import com.tagoapp.backend.service.QuizService;
 
 @RestController
 @RequestMapping("/api/quiz")
-// @CrossOrigin(origins = "http://127.0.0.1:4200 , http://localhost:4200 , http://127.0.0.1:4200/") // Angular開発サーバーからのアクセスを許可 [TODO] 本番環境は URL が決定次第追加
+@CrossOrigin(origins = "http://127.0.0.1:4200 , http://localhost:4200 , http://127.0.0.1:4200/") // Angular開発サーバーからのアクセスを許可
+                                                                                                 // [TODO] 本番環境は URL
+                                                                                                 // が決定次第追加
 public class QuizController {
 
     private static final Logger logger = LoggerFactory.getLogger(QuizController.class);
